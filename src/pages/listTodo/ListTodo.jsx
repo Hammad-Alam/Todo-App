@@ -1,44 +1,68 @@
 import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import * as yup from "yup";
+import { yupResolver } from "@hookform/resolvers/yup";
 import "./ListTodo.css";
 
 const ListTodo = () => {
-  const [todos, setTodos] = useState([]); // To keep track of todos item in an array.
-  const [currentItem, setCurrentItem] = useState("");
-  const [backgroundColor, setBackgroundColor] = useState("#000000");
-  const [editIndex, setEditIndex] = useState(-1); // To track which item is being edited.
+  const schema = yup.object().shape({
+    todo: yup.string().required("Todo field should not be empty")
+  });
 
-  const addTodoItem = (e) => {
-    e.preventDefault();
+  const { register, handleSubmit, formState: { errors }, reset } = useForm({
+    resolver: yupResolver(schema)
+  });
+
+  const [todos, setTodos] = useState([]);
+  const [editIndex, setEditIndex] = useState(-1);
+  const [editText, setEditText] = useState("");
+
+  const addTodoItem = (data) => {
+    const { todo } = data;
     const currentTodos = [...todos];
+
     if (editIndex === -1) {
-      // If not editing, add a new item.
       setTodos([
         ...currentTodos,
         {
           id: currentTodos.length,
-          name: currentItem,
+          name: todo,
+          completed: false // Add the completed property
         },
       ]);
+      reset();
     } else {
-      // If editing, update the existing item.
-      currentTodos[editIndex].name = currentItem;
+      currentTodos[editIndex].name = editText;
       setTodos(currentTodos);
-      setEditIndex(-1); // Reset editIndex.
+      setEditIndex(-1);
+      setEditText("");
     }
-    setCurrentItem("");
   };
 
   const editTodoItem = (index) => {
     const todoToEdit = todos[index];
-    setCurrentItem(todoToEdit.name);
+    setEditText(todoToEdit.name);
     setEditIndex(index);
   };
 
   const deleteTodoItem = (index) => {
-    let reducedTodo = [...todos];
-    reducedTodo.splice(index, 1); // Remove only the item at the specified index. Splice remove the value of specific index.
-    localStorage.setItem("todos", JSON.stringify(reducedTodo));
+    const reducedTodo = [...todos];
+    reducedTodo.splice(index, 1);
     setTodos(reducedTodo);
+  };
+
+  const completeTodoItem = (index) => {
+    const updatedTodos = [...todos];
+    updatedTodos[index].completed = !updatedTodos[index].completed; // Toggle the completed state
+    setTodos(updatedTodos);
+  };
+
+  const saveEdit = () => {
+    const currentTodos = [...todos];
+    currentTodos[editIndex].name = editText;
+    setTodos(currentTodos);
+    setEditIndex(-1);
+    setEditText("");
   };
 
   return (
@@ -46,48 +70,65 @@ const ListTodo = () => {
       <div className="app-wrapper">
         <div className="header">
           <h1>Todo-List 📔</h1>
-          <form onSubmit={addTodoItem}>
+          {/* Form for adding new todos */}
+          <form onSubmit={handleSubmit(addTodoItem)}>
             <input
               type="text"
-              value={currentItem}
-              onChange={(e) => setCurrentItem(e.target.value)}
               placeholder="Enter a Todo"
               className="task-input"
+              {...register("todo")}
+              disabled={editIndex !== -1}
             />
-            <button className="button-add" type="submit">
-              {editIndex === -1 ? "Add" : "Save"}{" "}
-              {/* Toggle label based on editIndex */}
+            <p style={{ color: "white", paddingBottom: "15px" }}>{errors.todo?.message}</p>
+            <button className="button-add" type="submit" disabled={editIndex !== -1}>
+              Add
             </button>
           </form>
           <ul>
-            {todos.map((todo, index) => {
-              return (
-                <li key={index} className="list-item">
-                  {editIndex === index ? (
+            {todos.map((todo, index) => (
+              <li key={index} className="list-item">
+                {editIndex === index ? (
+                  <div>
                     <input
                       className="edit-input"
                       type="text"
-                      value={currentItem}
-                      onChange={(e) => setCurrentItem(e.target.value)}
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
                     />
-                  ) : (
-                    <p className="list">{todo.name}</p>
-                  )}
-                  <button
-                    onClick={() => editTodoItem(index)}
-                    className="button-edit"
-                  >
-                    📝
-                  </button>
-                  <button
-                    onClick={() => deleteTodoItem(index)}
-                    className="button-delete"
-                  >
-                    ❌
-                  </button>
-                </li>
-              );
-            })}
+                    <button
+                      onClick={saveEdit}
+                      className="button-save"
+                    >
+                      ✔
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <p className="list" style={{ textDecoration: todo.completed ? "line-through" : "none" }}>
+                      {todo.name}
+                    </p>
+                    <button
+                      onClick={() => editTodoItem(index)}
+                      className="button-edit"
+                    >
+                      📝
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => deleteTodoItem(index)}
+                  className="button-delete"
+                >
+                  ❌
+                </button>
+                <button
+                  onClick={() => completeTodoItem(index)}
+                  className="button-complete"
+                >
+                  ☑
+                </button>
+              </li>
+            ))}
           </ul>
         </div>
       </div>

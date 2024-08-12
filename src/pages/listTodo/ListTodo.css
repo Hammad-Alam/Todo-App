@@ -176,7 +176,9 @@ button:focus {
 }
 
 .button-delete,
-.button-edit {
+.button-edit,
+.button-save,
+.button-complete {
   padding: 4px 8px;
   border-radius: 20px;
   cursor: pointer;
@@ -189,6 +191,16 @@ button:focus {
 
 .button-edit {
   background-color: #e2d029;
+  margin-right: 5px;
+}
+
+.button-save {
+  background-color: #00aaff;
+  margin-right: 5px;
+}
+
+.button-complete{
+  background-color: beige;
   margin-right: 5px;
 }
 
